@@ -157,3 +157,14 @@ elif True:
     print(1)
 else:
     print(2)
+
+
+# See: https://github.com/astral-sh/ruff/issues/19576
+# Comments between branches should make the fix unsafe
+if exc.status == 408:
+    return True
+elif exc.status == 429:
+    return True
+elif exc.status == 500:
+    # This comment explains the next branch
+    return True

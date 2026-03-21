@@ -7,7 +7,7 @@ use ruff_python_ast::comparable::ComparableStmt;
 use ruff_python_ast::stmt_if::{IfElifBranch, if_elif_branches};
 use ruff_python_ast::token::parenthesized_range;
 use ruff_python_ast::{self as ast, Expr};
-use ruff_python_trivia::{SimpleTokenKind, SimpleTokenizer};
+use ruff_python_trivia::{CommentRanges, SimpleTokenKind, SimpleTokenizer};
 use ruff_source_file::LineRanges;
 use ruff_text_size::{Ranged, TextRange};
 
@@ -100,6 +100,7 @@ pub(crate) fn if_with_same_arms(checker: &Checker, stmt_if: &ast::StmtIf) {
                 following_branch,
                 checker.locator(),
                 checker.tokens(),
+                checker.comment_ranges(),
             )
         });
     }
@@ -112,6 +113,7 @@ fn merge_branches(
     following_branch: &IfElifBranch,
     locator: &Locator,
     tokens: &ruff_python_ast::token::Tokens,
+    comment_ranges: &ruff_python_ast::CommentRanges,
 ) -> Result<Fix> {
     // Identify the colon (`:`) at the end of the current branch's test.
     let Some(current_branch_colon) =
@@ -120,6 +122,14 @@ fn merge_branches(
     else {
         return Err(anyhow::anyhow!("Expected colon after test"));
     };
+
+    // Check if there are comments between the current branch body and the following branch
+    // that would be deleted by the merge. If so, the fix must be unsafe.
+    let between_range = TextRange::new(
+        locator.line_end(current_branch.end()),
+        following_branch.test.start(),
+    );
+    let has_comments_between = !comment_ranges.comments_in_range(between_range).is_empty();
 
     let deletion_edit = Edit::deletion(
         locator.full_line_end(current_branch.end()),
@@ -164,10 +174,19 @@ fn merge_branches(
             None
         };
 
-    Ok(Fix::safe_edits(
-        deletion_edit,
-        parenthesize_edit.into_iter().chain(Some(insertion_edit)),
-    ))
+    let fix = if has_comments_between {
+        Fix::unsafe_edits(
+            deletion_edit,
+            parenthesize_edit.into_iter().chain(Some(insertion_edit)),
+        )
+    } else {
+        Fix::safe_edits(
+            deletion_edit,
+            parenthesize_edit.into_iter().chain(Some(insertion_edit)),
+        )
+    };
+
+    Ok(fix)
 }
 
 /// Return the [`TextRange`] of an [`IfElifBranch`]'s body (from the end of the test to the end of
