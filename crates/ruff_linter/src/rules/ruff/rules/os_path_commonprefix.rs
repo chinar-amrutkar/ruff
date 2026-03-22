@@ -19,6 +19,22 @@ use crate::{Edit, Fix, FixAvailability, Violation};
 ///
 /// `os.path.commonprefix` is deprecated as of Python 3.15.
 ///
+/// ## Semantic differences
+/// `os.path.commonprefix` and `os.path.commonpath` have different semantics:
+///
+/// - `os.path.commonprefix` finds the longest common *string prefix* — it
+///   compares characters one by one and does not consider path structure.
+///   This behavior is useful for non-path string comparisons.
+/// - `os.path.commonpath` finds the longest common *path component* — it
+///   normalizes paths and compares them at the directory level. It requires
+///   valid path-like strings and will raise `ValueError` for empty strings
+///   or strings with different path types.
+///
+/// If you are using `os.path.commonprefix` for non-path string prefix
+/// matching (e.g., finding a common prefix of arbitrary strings like
+/// `"123"` and `"124"`), this rule should be ignored, as
+/// `os.path.commonpath` does not support this use case.
+///
 /// ## Example
 /// ```python
 /// import os
