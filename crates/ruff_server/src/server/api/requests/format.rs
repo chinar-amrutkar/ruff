@@ -22,9 +22,23 @@ impl super::BackgroundDocumentRequestHandler for Format {
     super::define_document_url!(params: &types::DocumentFormattingParams);
     fn run_with_snapshot(
         snapshot: DocumentSnapshot,
-        _client: &Client,
+        client: &Client,
         _params: types::DocumentFormattingParams,
     ) -> Result<super::FormatResponse> {
+        let query = snapshot.query();
+        let source_type = query.source_type();
+
+        // Show a warning when attempting to format markdown without preview mode
+        if source_type.is_markdown() {
+            let settings = query.settings();
+            if !settings.formatter.preview.is_enabled() {
+                client.show_warning_message(
+                    "Formatting Markdown files requires preview mode. Enable `preview` in your Ruff configuration.",
+                );
+                return Ok(None);
+            }
+        }
+
         format_document(&snapshot)
     }
 }

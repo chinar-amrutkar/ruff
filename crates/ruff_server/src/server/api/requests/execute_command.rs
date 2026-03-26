@@ -89,6 +89,18 @@ impl super::SyncRequestHandler for ExecuteCommand {
                         .with_failure_code(ErrorCode::InternalError)?;
                 }
                 SupportedCommand::Format => {
+                    // Show a warning when attempting to format markdown without preview mode
+                    let source_type = snapshot.query().source_type();
+                    if source_type.is_markdown() {
+                        let settings = snapshot.query().settings();
+                        if !settings.formatter.preview.is_enabled() {
+                            client.show_warning_message(
+                                "Formatting Markdown files requires preview mode. Enable `preview` in your Ruff configuration.",
+                            );
+                            continue;
+                        }
+                    }
+
                     let fixes = super::format::format_full_document(&snapshot)?;
                     edit_tracker
                         .set_fixes_for_document(fixes, version)

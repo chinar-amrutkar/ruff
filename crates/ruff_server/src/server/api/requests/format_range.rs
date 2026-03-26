@@ -18,9 +18,20 @@ impl super::BackgroundDocumentRequestHandler for FormatRange {
     super::define_document_url!(params: &types::DocumentRangeFormattingParams);
     fn run_with_snapshot(
         snapshot: DocumentSnapshot,
-        _client: &Client,
+        client: &Client,
         params: types::DocumentRangeFormattingParams,
     ) -> Result<super::FormatResponse> {
+        let query = snapshot.query();
+        let source_type = query.source_type();
+
+        // Show a warning when attempting to range format markdown
+        if source_type.is_markdown() {
+            client.show_warning_message(
+                "Range formatting for Markdown files is not supported.",
+            );
+            return Ok(None);
+        }
+
         format_document_range(&snapshot, params.range)
     }
 }
