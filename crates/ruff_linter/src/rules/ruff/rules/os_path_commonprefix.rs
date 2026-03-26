@@ -19,6 +19,24 @@ use crate::{Edit, Fix, FixAvailability, Violation};
 ///
 /// `os.path.commonprefix` is deprecated as of Python 3.15.
 ///
+/// Note that `os.path.commonprefix` and `os.path.commonpath` have
+/// different semantics:
+///
+/// - `os.path.commonprefix` returns the longest common string prefix
+///   across all arguments, regardless of path structure. For example,
+///   `commonprefix(["/usr/lib", "/usr/local/lib"])` returns `"/usr/l"`,
+///   which is not a valid directory.
+/// - `os.path.commonpath` returns the longest common path component,
+///   always yielding a valid path (or raising an error for invalid
+///   ones). `commonpath(["/usr/lib", "/usr/local/lib"])` returns
+///   `"/usr"`.
+///
+/// If you are intentionally using `os.path.commonprefix` for
+/// non-path string prefix matching (e.g., `commonprefix(["123", "124"])`
+/// returns `"12"`), consider ignoring this rule. `os.path.commonpath`
+/// would return `""` for such inputs, as it compares path components
+/// rather than string prefixes.
+///
 /// ## Example
 /// ```python
 /// import os
