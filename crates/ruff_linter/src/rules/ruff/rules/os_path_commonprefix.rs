@@ -11,11 +11,29 @@ use crate::{Edit, Fix, FixAvailability, Violation};
 ///
 /// ## Why is this bad?
 /// `os.path.commonprefix` performs a character-by-character string
-/// comparison rather than comparing path components. This leads to
-/// incorrect results when paths share a common string prefix that
-/// is not a valid path component.
+/// comparison rather than comparing path components. This can lead to
+/// incorrect results when working with paths, because it may return a
+/// string that is not a valid path component.
 ///
-/// `os.path.commonpath` correctly compares path components.
+/// `os.path.commonpath` correctly compares path components, returning
+/// a valid common path. Unlike `commonprefix`, `commonpath` raises
+/// `ValueError` when given paths with different roots (e.g., mixing
+/// absolute and relative paths), which helps catch errors early.
+///
+/// However, note that `commonprefix` works on arbitrary strings, not
+/// just paths. If you are intentionally using `commonprefix` for
+/// non-path string prefix matching (e.g., version numbers, identifiers,
+/// or other common prefix scenarios), `commonpath` is not a suitable
+/// replacement. `commonpath` requires valid path-like inputs and will
+/// not produce useful results for non-path strings:
+///
+/// ```python
+/// >>> import os
+/// >>> os.path.commonprefix(["12345", "12378"])
+/// "123"
+/// >>> os.path.commonpath(["12345", "12378"])
+/// ""
+/// ```
 ///
 /// `os.path.commonprefix` is deprecated as of Python 3.15.
 ///
