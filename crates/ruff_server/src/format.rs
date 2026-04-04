@@ -121,11 +121,19 @@ fn format_external(
         SourceType::Python(py_source_type) => {
             formatter_settings.to_format_options(py_source_type, document.contents(), Some(path))
         }
-        SourceType::Markdown => formatter_settings.to_format_options(
-            PySourceType::Python,
-            document.contents(),
-            Some(path),
-        ),
+        SourceType::Markdown => {
+            if !formatter_settings.preview.is_enabled() {
+                tracing::warn!("Markdown formatting is experimental, enable preview mode.");
+                return Ok(FormatResult::PreviewOnly {
+                    file_format: "Markdown",
+                });
+            }
+            formatter_settings.to_format_options(
+                PySourceType::Python,
+                document.contents(),
+                Some(path),
+            )
+        }
         SourceType::Toml(_) => {
             tracing::warn!("Formatting TOML files not supported");
             return Ok(FormatResult::Unchanged);
